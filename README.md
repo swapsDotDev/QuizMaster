@@ -35,95 +35,109 @@ The Online Quiz Application enables users to test their knowledge through an int
 ### Prerequisites
 - Node.js (>= 14.x)
 - npm or yarn
+# QuizMaster — Online Quiz Application
 
-### Installation
+A full-stack React + Vite quiz app with a Node/Express + SQLite backend. Users can start a timed quiz, answer one question at a time, submit answers, and see a detailed result breakdown.
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd online-quiz-app
-   ```
+This README explains how to run the project locally, what endpoints exist, and troubleshooting tips.
 
-2. Install backend dependencies:
-   ```bash
-   cd server
-   npm install
-   ```
+## Project layout
 
-3. Install frontend dependencies:
-   ```bash
-   cd ../client
-   npm install
-   ```
-
-4. Set up the backend:  
-   The backend uses SQLite, which creates a `quiz.db` file automatically in the server directory.  
-   The database is seeded with 5 sample questions on startup.
-
-5. Run the backend:
-   ```bash
-   cd server
-   npm start
-   ```
-   The server runs on http://localhost:5000 by default.
-
-6. Run the frontend:
-   ```bash
-   cd client
-   npm run dev
-   ```
-   The frontend runs on http://localhost:5173 (default Vite port).
-
-7. Access the application:  
-   Open http://localhost:5173 in your browser to start the quiz.
-
-## Project Structure
 ```
-online-quiz-app/
-├── client/                 # Frontend (React + Vite)
-│   ├── src/
-│   │   ├── components/     # Reusable components (ProgressBar, QuestionCard, Timer)
-│   │   ├── pages/          # Page components (StartPage, QuizPage, ResultPage)
-│   │   ├── App.jsx         # Main app with routing
-│   │   └── styles.css      # Custom styles
-├── server/                 # Backend (Node.js + Express)
-│   ├── routes/
-│   │   └── quizRoutes.js   # API routes
-│   ├── db.js               # SQLite database setup
-│   └── server.js           # Express server
-├── quiz.db                 # SQLite database file (auto-generated)
-└── README.md               # Project documentation
+QuizMaster/
+├── backend/                # Express server + SQLite db
+│   ├── package.json
+│   ├── quiz.db             # SQLite DB (created / seeded)
+│   └── src/
+│       ├── server.js
+│   │       ├── db.js
+│   │       └── routes/quizRoutes.js
+├── frontend/               # React + Vite app
+│   ├── package.json
+│   └── src/
+│       ├── App.jsx
+│   ├── main.jsx
+│   ├── pages/
+│   │   ├── StartPage.jsx
+│   │   ├── QuizPage.jsx
+│   │   └── ResultPage.jsx
+│   └── components/
+│       ├── QuestionCard.jsx
+│       ├── ProgressBar.jsx
+│       └── Timer.jsx
+└── package.json            # top-level scripts (start server+client concurrently)
 ```
 
-## Available Scripts
+## Requirements
+- Node.js 14+ and npm
 
-### In the client directory:
-- `npm run dev`: Starts the Vite development server with hot module replacement (HMR).
-- `npm run build`: Builds the app for production.
-- `npm run lint`: Runs ESLint to check for code issues.
+## Install
 
-### In the server directory:
-- `npm start`: Starts the Express server.
+1. Install top-level dependencies used to orchestrate both servers (optional):
 
-## API Endpoints
+```bash
+npm install
+```
+
+2. Install backend and frontend packages separately (if you prefer):
+
+```bash
+cd backend
+npm install
+
+cd ../frontend
+npm install
+```
+
+## Run (development)
+
+From the repository root you can start both backend and frontend together:
+
+```pwsh
+npm run start
+```
+
+This runs the backend on http://localhost:5000 and the frontend (Vite) on http://localhost:5173.
+
+You can also run them individually:
+
+Backend only:
+
+```pwsh
+cd backend
+npm run dev
+# or: npm start
+```
+
+Frontend only:
+
+```pwsh
+cd frontend
+npm run dev
+```
+
+## API
+
+Base URL: http://localhost:5000
 
 ### GET /api/questions
-Returns: Array of questions with id, text, and options (excludes correct answers).
+Returns the quiz questions *without* correct answers. Example response:
 
-**Example Response:**
 ```json
 [
-  { "id": 1, "text": "What is the capital of France?", "options": ["London", "Berlin", "Paris", "Madrid"] }
+  { "id": 1, "text": "What is the capital of France?", "options": ["London","Berlin","Paris","Madrid"] }
 ]
 ```
 
 ### POST /api/submit
-**Request Body:**
+Request body:
+
 ```json
 { "answers": { "1": 2, "2": 1 } }
 ```
 
-**Response:**
+Response:
+
 ```json
 {
   "score": 2,
@@ -134,22 +148,55 @@ Returns: Array of questions with id, text, and options (excludes correct answers
 }
 ```
 
-## Future Improvements
-- Backend:
-  - Add unit tests for scoring logic (e.g., using Jest).
-  - Validate question IDs in the /submit endpoint.
-  - Use environment variables for configuration (e.g., PORT, database path).
+The backend validates the answers payload, computes per-question correctness using the stored `correctAnswer` values, and returns a detailed breakdown.
 
-- Frontend:
-  - Add unit tests for components using Jest and React Testing Library.
-  - Require answer selection before navigating or submitting.
-  - Enhance accessibility with ARIA attributes and keyboard navigation.
-  - Persist quiz state in localStorage to prevent data loss on refresh.
+## Testing
 
-- General:
-  - Use environment variables for API URLs (e.g., REACT_APP_API_URL).
-  - Add TypeScript for type safety.
-  - Document API and components with JSDoc or OpenAPI.
+The backend includes a basic Jest test setup (see `backend/tests/quiz.test.js`). Run backend tests:
 
-## License
-This project is open-source and available under the MIT License.
+```pwsh
+cd backend
+npm test
+```
+
+If tests are not yet present or failing, please open `backend/tests` to add assertions around scoring and payload validation.
+
+## Troubleshooting
+
+- 404 when the frontend requests `/api/questions`:
+  - Ensure the backend server is running (check the terminal where `npm run dev` or `npm start` is active).
+  - Make sure the router in `backend/src/routes/quizRoutes.js` exposes `/questions` and the server mounts the router at `/api` (this project does that by default).
+  - Confirm `db.js` connected to `quiz.db` successfully (startup logs print the database path). If `quiz.db` is missing, the backend may exit; recreate or seed it.
+
+- CORS: The backend uses `cors()` so local dev requests from Vite should be allowed.
+
+- Port conflicts: Backend defaults to 5000; frontend to 5173. If those ports are in use, stop conflicting processes or change the ports.
+
+- If you see answers leaking in the `/api/questions` response, make sure `db.js` does not include `correctAnswer` when building the public response (the repo has been updated to avoid this).
+
+## Creating / Seeding the SQLite database
+
+If you need to create or re-seed the `quiz.db` manually, a SQL seed file is provided at `backend/seed.sql`.
+
+Steps (run from the `backend` folder):
+
+```pwsh
+# Create the DB file and run the seed script
+sqlite3 quiz.db < seed.sql
+
+# Verify content (optional)
+sqlite3 quiz.db "SELECT id, text, options, correctAnswer FROM questions;"
+```
+
+The `seed.sql` file creates the `questions` table and inserts 5 sample questions. After seeding, restart the backend server.
+
+## Next improvements (suggested)
+
+- Add validation for submitted question IDs: ensure the frontend cannot submit unknown IDs.
+- Persist partial answers in `localStorage` to survive reloads.
+- Add authentication if you want per-user tracking.
+- Add more unit tests for the scoring logic and API error cases.
+
+## Contact
+
+If you want me to run the backend tests, re-seed the database, or add more detailed logging for troubleshooting, tell me which step to run and I will execute it and report back.

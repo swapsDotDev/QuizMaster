@@ -1,25 +1,15 @@
 const express = require("express");
-const db = require("../db");
+const { db, getQuestions } = require("../db");
 
 const router = express.Router();
 
 router.get("/questions", (req, res) => {
-  db.all("SELECT id, text, options FROM questions", (err, rows) => {
+  getQuestions((err, questions) => {
     if (err) {
       console.error("Error fetching questions:", err.message);
       return res.status(500).json({ error: "Failed to fetch questions" });
     }
-    try {
-      const questions = rows.map((row) => ({
-        id: row.id,
-        text: row.text,
-        options: JSON.parse(row.options),
-      }));
-      res.json(questions);
-    } catch (err) {
-      console.error("Error parsing options:", err.message);
-      res.status(500).json({ error: "Failed to parse question options" });
-    }
+    res.json(questions);
   });
 });
 
